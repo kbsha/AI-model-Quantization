@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>AI Label Tool</title>
+
+<style>
+
+body {
+    text-align: center;
+    font-family: Arial;
+    background: #111;
+    color: white;
+}
+
+canvas {
+    border: 2px solid white;
+    cursor: crosshair;
+}
+
+.card {
+    margin: 20px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>🧠 AI Annotation Tool (MVP)</h1>
+
+<input type="file" id="fileInput">
+
+<br><br>
+
+<canvas id="canvas"></canvas>
+
+<br>
+
+<input type="text" id="label" placeholder="class name">
+
+<button onclick="saveBox()">Save Box</button>
+
+<button onclick="sendToTrain()">Train Model</button>
+<button onclick="startTraining()">🚀 Train Model</button>
+
+
+<script>
+
+let canvas = document.getElementById("canvas");
+let ctx = canvas.getContext("2d");
+
+let img = new Image();
+
+let startX, startY, endX, endY;
+
+let boxes = [];
+
+let drawing = false;
+
+// LOAD IMAGE
+document.getElementById("fileInput").onchange = function(e) {
+
+    let file = e.target.files[0];
+
+    let reader = new FileReader();
+
+    reader.onload = function(event) {
+
+        img.src = event.target.result;
+
+    }
+
+    reader.readAsDataURL(file);
+
+};
+
+img.onload = function() {
+
+    canvas.width = img.width;
+    canvas.height = img.height;
+
+    ctx.drawImage(img, 0, 0);
+
+};
+
+// DRAW BOX
+canvas.onmousedown = function(e) {
+
+    drawing = true;
+
+    startX = e.offsetX;
+    startY = e.offsetY;
+
+};
+
+canvas.onmouseup = function(e) {
+
+    drawing = false;
+
+    endX = e.offsetX;
+    endY = e.offsetY;
+
+    ctx.strokeStyle = "red";
+    ctx.strokeRect(startX, startY, endX - startX, endY - startY);
+
+};
+
+// SAVE BOX
+function saveBox() {
+
+    let label = document.getElementById("label").value;
+
+    boxes.push({
+        x: startX,
+        y: startY,
+        w: endX - startX,
+        h: endY - startY,
+        label: label
+    });
+
+    alert("Box saved!");
+}
+
+// SEND TO BACKEND
+function sendToTrain() {
+
+    fetch("/save_annotations", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            boxes: boxes
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert("Dataset saved. Training started.");
+    });
+
+}
+
+
+function startTraining() {
+
+    fetch("/train")
+    .then(res => res.text())
+    .then(data => {
+        alert(data);
+    });
+
+}
+
+
+</script>
+
+</body>
+</html>
